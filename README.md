@@ -1,5 +1,65 @@
-
 ---
+
+## Bidirectional Mamba Fusion Proposal: HZip-Mamba
+
+This method aims to fuse the forward ($Y\_f$) and backward ($Y\_b$) outputs from a Bidirectional Mamba scan, leveraging local temporal context and sequence volatility (gradient information) to generate a high-quality resulting sequence ($Y$).
+
+### Step 1: Global Bidirectional Scan (O(N) Parallel)
+
+* **Action:** Simultaneously run two global Mamba Scanners (one forward, one backward) in parallel.
+* **Output:** Two complete, unmodified "unidirectional suggested" sequences:
+    * Y\_f (Forward output sequence from t=1 to N, shape L x D)
+    * Y\_b (Backward output sequence from t=N to 1, shape L x D)
+
+### Step 2: Context Widening and Local Context Generation (Focus on the 2 x k Convolution Concept)
+
+* **Action:**
+    1.  Concatenate $Y\_f$ and $Y\_b$ along the feature dimension (D) to obtain an enhanced feature sequence $Y\_in$ (shape L x (2D)).
+    2.  Apply a one-dimensional convolution (Conv1D) to $Y\_in$, setting the kernel\_size = k (e.g., k=3 or 5), with an input channel count of 2D.
+* **Core Understanding – 2 x k Convolution Kernel Operation:**
+    * Although implemented as a 1D convolution in the framework, its width k slides across the temporal steps (e.g., t-1, t, t+1).
+    * Since the input channels are the concatenated features of $Y\_f$ and $Y\_b$ (2D channels), this 1D convolution kernel **logically operates simultaneously on the feature space of both $Y\_f$ and $Y\_b$**.
+    * The kernel's shape can be interpreted as extracting and fusing information simultaneously across the two directional dimensions ($Y\_f$ and $Y\_b$) and across k local temporal steps, forming an **effective 2 x k local information extractor**.
+* **Output:** A new "wide-field summary" sequence, Y\_local\_context.
+* **Purpose:** Y\_local\_context[t] fuses the interactive information between $Y\_f$ and $Y\_b$ at time t and its neighbors (t±(k-1)/2).
+
+### Step 3: Calculating Intelligent Gating (Incorporating Gradient Information)
+
+#### 3.1. Calculating Sequence Volatility (Gradient Magnitude)
+
+* **Action:** Calculate the sequence local rate of change (gradient magnitude) for $Y\_f$ and $Y\_b$ at the current time step t.
+* **Calculation Formulas:**
+    * Forward Gradient G\_f[t]: Measures the instantaneous change in $Y\_f$.
+        G\_f[t] = Abs( Y\_f[t] - Y\_f[t-1] )
+    * Backward Gradient G\_b[t]: Measures the instantaneous change in $Y\_b$.
+        G\_b[t] = Abs( Y\_b[t] - Y\_b[t+1] )
+* **Output:** Sequence volatility feature vectors G\_f and G\_b.
+* **Note:** The gradient calculation window can be set larger, such as t-5 to t+5. For noisy data, gradients can be calculated over a wider window and smoothed for noise reduction.
+
+#### 3.2. Feature Fusion and Gating Input
+
+* **Action:** Concatenate the wide-field summary $Y\_local\_context$ from Step 2 with the calculated sequence volatility $G\_f$ and $G\_b$ to form the input for the gating network.
+    Gating\_Input = Concat(Y\_local\_context, G\_f, G\_b)
+
+#### 3.3. Calculating Gating Vectors
+
+* **Action:** Feed the Gating\_Input into two independent Gating Networks (MLP).
+* **Output:** Two dimension-wise gating vectors $g\_f$ and $g\_b$.
+    g\_f = Sigmoid(MLP\_f(Gating\_Input))
+    g\_b = Sigmoid(MLP\_g(Gating\_Input))
+
+### Step 4: Dimension-wise Fusion
+
+* **Action:** Use $g\_f$ and $g\_b$ to perform element-wise weighted fusion on the original $Y\_f$ and $Y\_b$.
+* **Final Output (Y\_t):**
+    $$Y_t = (g_f[t] * Y_f[t]) + (g_b[t] * Y_b[t])$$
+
+### Extensions:
+
+1.  **Convolutional Kernel Blocking (Chunking):** The convolutional kernel can be used to merge sequences with similar properties into a block. This allows the structural parameters output by the convolution to regulate the $g\_f$ and $g\_b$ gates more precisely. (The data chunking can reuse the block map from Flexible Block Mamba).
+2.  **Dynamic Adaptive Convolutional Kernel:** Use a Receptive Field Controller (RFC) to predict the kernel size and configuration based on the input and the bidirectional outputs. This further enhances the model's flexibility, enabling it to adapt the context window size based on the task or data characteristics.
+---
+
 
 ## 双向mamba融合设想： HZip-Mamba
 
