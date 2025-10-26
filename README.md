@@ -1,5 +1,7 @@
 ## Bidirectional Mamba Fusion Concept: HZip-Mamba
 
+Smart-Zipper-Mamba (HZip-Mamba) is an innovative bidirectional sequence modeling framework that leverages Mamba's efficient linear complexity. It generates forward and backward sequence outputs (Y_f and Y_b) through parallel scanning, integrates sequence change rates (G_f and G_b) with a 2 x k convolution kernel to extract local context, and employs an intelligent gating mechanism for dimension-wise fusion to produce high-quality sequence results (Y). Enhanced by dynamic adaptive convolution kernels and block partitioning, the framework offers flexibility and excels in tasks like time series forecasting and NLP
+
 With this method, we can fuse the bidirectional Mamba scans (Y_f) and (Y_b), and use local temporal context and sequence rate-of-change to produce a high-quality (Y) result for each position.
 
 ### Step 1: Global Bidirectional Scanning (O(N) in parallel)
@@ -64,6 +66,8 @@ With this method, we can fuse the bidirectional Mamba scans (Y_f) and (Y_b), and
 
 
 ## 双向mamba融合设想： HZip-Mamba
+
+Smart-Zipper-Mamba（HZip-Mamba）是一种创新的双向序列建模框架，基于 Mamba 的高效线性复杂度，通过并行正向和反向扫描生成序列输出 Y_f 和 Y_b，并结合序列变化率（G_f 和 G_b）与 2 x k 卷积核提取局部上下文，利用智能门控机制实现维度级融合，生成高质量序列结果 Y。该框架通过动态自适应卷积核和分块策略进一步提升灵活性，适用于时间序列预测、NLP 等任务
 
 通过此方法，可融合双向 Mamba 扫描出的 Yf 和 Yb，并利用局部时序上下文和序列变化率为每个点位生成优质的 Y 结果。
 
