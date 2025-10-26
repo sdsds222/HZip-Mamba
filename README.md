@@ -86,6 +86,7 @@ The **combination** of $G_f$ and $G_b$ acts as a **semantic boundary and directi
 
 1. **Kernel-based blocking**: Use convolutional kernels to merge segments of similar properties into a block; then incorporate the structural parameters from the kernel outputs to more precisely control the gating (g_f) and (g_b). (The block data can reuse the block maps from Flexible Block Mamba.)
 2. **Dynamic adaptive kernels**: Use a Receptive Field Controller (RFC) to predict kernel size and configuration based on the inputs and the bidirectional outputs. This further enhances model flexibility, allowing it to adaptively adjust the context window size according to the task or data characteristics.
+3. Removing the $\text{Abs}$ function from $G$ offers a greater advantage in trend-sensitive tasks, but requires addressing negative values and noise issues; it is therefore suitable for time series forecasting or scenarios with a high signal-to-noise ratio.
 
 
 ## 双向mamba融合设想： HZip-Mamba
@@ -182,3 +183,4 @@ $G_f$ 和 $G_b$ 的**绝对变化幅值**充当**语义趋势和信息积累的�
 ### 拓展：
 1. 卷积核分块：可以用卷积核将性质相同的序列合并成一个块，这样加入卷积核输出的结构参数能够更精确地调控gf和gb的门控。（分块的数据可复用Flexible block mamba里的分块地图）
 2. 动态自适应卷积核：通过感受野控制器 (RFC) 根据输入和双向输出预测卷积核的尺寸和配置。这种方法进一步提升了模型的灵活性，使其能够根据任务或数据的特性自适应地调整上下文窗口大小。
+3. 去掉G的Abs在趋势敏感任务中更有优势，但需处理负值和噪声问题，适合时间序列预测或高信噪比场景。
