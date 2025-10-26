@@ -1,7 +1,7 @@
 
 ---
 
-## 双向mamba融合设想： Smart-Zipper-Mamba（HZip-Mamba 增强版）
+## 双向mamba融合设想： HZip-Mamba
 
 通过此方法，可融合双向 Mamba 扫描出的 Yf 和 Yb，并利用局部时序上下文和序列变化率为每个点位生成优质的 Y 结果。
 
