@@ -59,6 +59,29 @@ With this method, we can fuse the bidirectional Mamba scans (Y_f) and (Y_b), and
 * Final output ((Y_t)):
   $$Y_t = (g_f[t] * Y_f[t]) + (g_b[t] * Y_b[t])$$
 
+---
+
+### The Role of Local Semantic Change Rate ($G$) in HZip-Mamba for Text Sequences
+
+The combination of $G_f[t]$ and $G_b[t]$ (magnitudes of absolute change) measures the semantic difference between adjacent token embeddings, with its **combined pattern** serving as an **intelligent decision signal** for the gating mechanism.
+
+**Core Function:** Guides the model to fuse bidirectional information by perceiving the semantic **direction and boundaries** of change.
+
+1.  **Semantic Turning Point Localization and Direction Inference (New: Start/End Concept):**
+    * **Phenomenon:** $G_f$ and $G_b$ **simultaneously** or **near-simultaneously** increase sharply upon encountering a transition word (e.g., "but") or topic shift, marking a **semantic change initiation point**.
+    * **Effect:** Activates the gates $g_f, g_b$. By comparing the relative magnitudes and trends of $G_f$ and $G_b$, the gating network **infers the direction of semantic change** (e.g., that the forward stream is the dominant driver). This achieves an **instantaneous shift in semantic focus**.
+
+2.  **Key Information Focusing and Boundary Confirmation:**
+    * **Phenomenon:** $G$ is high when encountering core entities, important verbs, or high-density information tokens.
+    * **Effect:** The gates $g_f, g_b$ amplify the contribution of $Y_f, Y_b$. The $G_f, G_b$ pattern confirms whether the high-$G$ region is a **boundary** or a **stable expression**, ensuring **critical information is fully adopted**.
+
+3.  **Background Information Filtering and Noise Exclusion:**
+    * **Phenomenon:** $G$ is low when encountering redundant function words or background descriptions.
+    * **Effect:** The gates $g_f, g_b$ remain neutral or suppress the input. When $G_f$ is high but $G_b$ is low, the model can infer a **local noise spike** or **isolated change**, enabling the **filtering and exclusion of non-critical information**.
+
+The **combination** of $G_f$ and $G_b$ acts as a **semantic boundary and direction alert system**, enabling HZip-Mamba to dynamically allocate trust in the **forward (change impetus)** and **backward (change confirmation)** streams at the **dimensional level**.
+
+
 ### Extensions:
 
 1. **Kernel-based blocking**: Use convolutional kernels to merge segments of similar properties into a block; then incorporate the structural parameters from the kernel outputs to more precisely control the gating (g_f) and (g_b). (The block data can reuse the block maps from Flexible Block Mamba.)
@@ -121,6 +144,33 @@ Smart-Zipper-Mamba（HZip-Mamba）是一种创新的双向序列建模框架，�
 * 动作：使用 g\_f 和 g\_b，对原始 Y\_f 和 Y\_b 进行逐元素的加权融合。
 * 最终输出 (Y\_t)：
 $$Y_t = (g_f[t] * Y_f[t]) + (g_b[t] * Y_b[t])$$
+
+### 案例
+
+---
+
+### HZip-Mamba 中局部语义变化率 ($G$) 在文本中的作用
+
+$G_f[t]$ 和 $G_b[t]$（绝对变化大小）衡量相邻 Token 嵌入间的语义差异，其**组合模式**作为门控的**智能决策信号**。
+
+**核心功能：** 引导模型通过感知语义**变化方向和边界**，按需融合双向信息。
+
+1.  **语义转折点定位与方向判断（新增起点/终点概念）：**
+    * **现象：** 遇到转折词（如“但是”）或主题切换时，$G_f$ 和 $G_b$ **同时**或**几乎同时**剧烈增大，标记为**语义变化起点**。
+    * **作用：** 激活门控 $g_f, g_b$。门控网络通过比较 $G_f$ 和 $G_b$ 的相对大小和趋势，**推断语义变化的方向**（例如：正向信息流是主要的推动力）。实现**语义主题的即时切换**。
+
+2.  **关键信息聚焦与边界确认：**
+    * **现象：** 遇到核心实体、重要动词等信息密度高词汇时，$G$ 变高。
+    * **作用：** 门控 $g_f, g_b$ 放大 $Y_f, Y_b$ 对最终结果的贡献。通过 $G_f, G_b$ 的模式，确认该高 $G$ 区域是**边界**还是**稳定表达**，确保**关键信息被充分采信**。
+
+3.  **背景信息过滤与噪音排除：**
+    * **现象：** 遇到冗余的功能词或背景描述时，$G$ 较低。
+    * **作用：** 门控 $g_f, g_b$ 保持中性或抑制。当 $G_f$ 高而 $G_b$ 低时，模型可推断其为**局部噪音**或**孤立变化**，实现对**非关键信息的过滤**和排除。
+
+$G_f$ 和 $G_b$ 的**组合**充当**语义边界和方向警报系统**，使得 HZip-Mamba 能在**维度级别**动态分配对**正向（变化推动力）**和**反向（变化确认力）**的信任度。
+
+---
+
 ### 拓展：
 1. 卷积核分块：可以用卷积核将性质相同的序列合并成一个块，这样加入卷积核输出的结构参数能够更精确地调控gf和gb的门控。（分块的数据可复用Flexible block mamba里的分块地图）
 2. 动态自适应卷积核：通过感受野控制器 (RFC) 根据输入和双向输出预测卷积核的尺寸和配置。这种方法进一步提升了模型的灵活性，使其能够根据任务或数据的特性自适应地调整上下文窗口大小。
